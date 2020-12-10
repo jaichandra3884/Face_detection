@@ -1,0 +1,46 @@
+import cv2
+import sqlite3
+import time
+import face_recognition
+
+l=0
+fc=cv2.CascadeClassifier(r"C:\Users\HP\.spyder-py3\opencv\build\etc\haarcascades\haarcascade_frontalface_default.xml")
+video=cv2.VideoCapture(0,cv2.CAP_DSHOW)
+while True:
+    check, frame=video.read()
+    gi=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    face=fc.detectMultiScale(gi,1.1,4)
+    for x,y,w,h in face:
+        frame=cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 3)
+    cv2.imshow("Capturing",frame)
+    k=cv2.waitKey(1)
+    if(k==ord('q')):
+        break
+time.sleep(3)
+video.release()
+cv2.destroyAllWindows()
+unknown_face_encoding = face_recognition.face_encodings(frame)
+if(len(unknown_face_encoding)>0):
+    ukn=unknown_face_encoding[0]
+    conn=sqlite3.connect('users22.db')
+    c=conn.cursor()
+    c.execute("SELECT * FROM user1")
+    d=c.fetchall()
+    for i in d:
+        rec=i[2]
+        with open('some.png','wb') as f:
+            f.write(rec)
+        uk=face_recognition.load_image_file('some.png')
+        known_face_encoding=face_recognition.face_encodings(uk)[0]
+        results = face_recognition.compare_faces([known_face_encoding], ukn)
+        if(results[0]==True):
+            print("Authorised User")
+            print(i[0])
+            print(i[1])
+            l=1
+    if(l==0):
+        print("Unauthorised User")
+        cv2.imwrite('unautherised.jpg',frame)
+else:
+    print("Face not detected Please try again with proper lighting")
+c.close() 
