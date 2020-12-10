@@ -1,0 +1,62 @@
+import cv2
+import sqlite3
+import face_recognition
+import time
+
+def createtable():
+    conn=sqlite3.connect('users22.db')
+    c=conn.cursor()
+    c.execute("""CREATE TABLE user1(
+             id integer,
+             name TEXT,
+             image BLOP
+             )""")
+    conn.commit()
+    conn.close()
+def insertvalues(ids,names):
+    l=0
+    conn=sqlite3.connect('users22.db')
+    c=conn.cursor()
+    fc=cv2.CascadeClassifier(r"C:\Users\HP\.spyder-py3\opencv\build\etc\haarcascades\haarcascade_frontalface_default.xml")
+    video=cv2.VideoCapture(0,cv2.CAP_DSHOW)
+    while True:
+        check, frame=video.read()
+        gi=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face=fc.detectMultiScale(gi,1.1,4)
+        for x,y,w,h in face:
+            frame=cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 3)
+        cv2.imshow("Capturing",frame)
+        k=cv2.waitKey(1)
+        if(k==ord('q')):
+            break
+    time.sleep(3)
+    video.release()
+    cv2.destroyAllWindows()
+    unknown_face_encoding = face_recognition.face_encodings(frame)[0]
+    c.execute("SELECT * FROM user1")
+    d=c.fetchall()
+    for i in d:
+        rec=i[2]
+        with open('some1.png','wb') as f:
+            f.write(rec)
+        uk=face_recognition.load_image_file('some1.png')
+        known_face_encoding=face_recognition.face_encodings(uk)[0]
+        results = face_recognition.compare_faces([known_face_encoding], unknown_face_encoding)
+        if(results[0]==True):
+            print("Face already registered with Id and Name:")
+            print(i[0])
+            print(i[1])
+            l=1
+    if(l==0):
+        pic='RegisteredFaces\\'+names+'.jpg'
+        cv2.imwrite(pic,frame)
+        with open(pic,'rb') as f:
+            data=f.read()
+        c.execute("INSERT INTO user1 (id, name, image) VALUES(?,?,?)",(ids,names,data))
+        conn.commit()
+        conn.close()
+        print("Registered Sucessfully\n")
+a=int(input("Enter any ID\n"))
+b=input("Enter any Name for registraction\n")
+#createtable()
+insertvalues(a, b)
